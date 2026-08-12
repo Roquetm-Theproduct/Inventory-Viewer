@@ -1,4 +1,4 @@
-# The Product
+ # The Product
 
 Fresh build. Separate from any other project — own repo, own Supabase project, own credentials.
 
