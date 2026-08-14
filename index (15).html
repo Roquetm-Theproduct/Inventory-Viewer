@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The Product — Inventory</title>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ============================================================
+   THE PRODUCT — inventory availability shell
+   Fresh build. No Stoneworks data, no shared credentials.
+   ============================================================ */
+
+:root{
+  --chrome:#1b1e22; --chrome-border:rgba(255,255,255,0.08); --chrome-text:#d8d5cd; --chrome-muted:#8b8f96;
+  --paper:#f5f4f0; --card:#ffffff;
+  --ink:#22262b; --ink-muted:#6b7280;
+  --line:rgba(34,38,43,0.10); --line2:rgba(34,38,43,0.18);
+
+  --brand:#a6741f; --brand-light:#c98f2a; --brand-dim:rgba(166,116,31,0.10);
+
+  --in-stock:#2f7a55; --in-stock-dim:rgba(47,122,85,0.12);
+  --low-stock:#c17f2a; --low-stock-dim:rgba(193,127,42,0.12);
+  --out-stock:#a8432f; --out-stock-dim:rgba(168,67,47,0.12);
+  --incoming:#3f6b8a; --incoming-dim:rgba(63,107,138,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;font-weight:400;min-height:100vh;}
+.hidden{display:none !important;}
+.app{display:flex;flex-direction:column;min-height:100vh;}
+
+.display{font-family:'Big Shoulders Display',sans-serif;font-weight:800;letter-spacing:.3px;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--brand);}
+
+/* ---------- Top chrome ---------- */
+.topnav{
+  position:sticky;top:0;display:flex;align-items:center;
+  background:var(--chrome);border-bottom:1px solid var(--chrome-border);
+  padding:0 20px;height:58px;flex-shrink:0;z-index:500;
+}
+.brand{display:flex;align-items:center;gap:10px;margin-right:28px;flex-shrink:0;}
+.brand img{height:34px;width:34px;object-fit:cover;border-radius:50%;flex-shrink:0;}
+.brand-text{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:19px;letter-spacing:.5px;color:#fff;white-space:nowrap;}
+.client-divider{font-size:11px;color:var(--chrome-muted);margin:0 6px;flex-shrink:0;}
+.client-logo{height:38px;width:auto;object-fit:contain;flex-shrink:0;}
+.client-logo-login{height:44px;width:auto;object-fit:contain;}
+.nav-tabs{display:flex;gap:0;flex:1;align-items:stretch;height:58px;}
+.nav-tab{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+  padding:0 16px;height:58px;display:flex;align-items:center;
+  background:none;border:none;color:var(--chrome-muted);cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;
+}
+.nav-tab:hover{color:#fff;}
+.nav-tab.active{color:var(--brand-light);border-bottom-color:var(--brand-light);}
+.sync-status{
+  margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--chrome-muted);
+  display:flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--chrome-muted);}
+.sync-dot.live{background:var(--in-stock);box-shadow:0 0 6px var(--in-stock);}
+.sync-dot.error{background:var(--out-stock);}
+
+/* ---------- Content ---------- */
+.content{flex:1;padding:28px 28px 60px;max-width:1240px;width:100%;margin:0 auto;}
+.page-header{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:22px;}
+
+/* ---------- View toggle (List / Gallery) ---------- */
+.view-toggle{display:inline-flex;border:1px solid var(--line2);background:var(--card);flex-shrink:0;}
+.view-toggle-btn{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+  padding:9px 16px;border:none;background:none;color:var(--ink-muted);cursor:pointer;transition:all .15s;
+}
+.view-toggle-btn.active{background:var(--brand);color:#fff;}
+.view-toggle-btn:not(.active):hover{color:var(--ink);}
+
+/* ---------- Gallery / browse view ---------- */
+.gallery-view{padding:6px 0 40px;}
+.gallery-counter{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;}
+.gallery-stage{display:flex;align-items:center;justify-content:center;gap:18px;}
+.gallery-nav{
+  background:var(--card);border:1px solid var(--line2);width:52px;height:52px;border-radius:50%;
+  font-size:24px;color:var(--ink);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.gallery-nav:hover{border-color:var(--brand);color:var(--brand);}
+.gallery-nav:disabled{opacity:.35;cursor:not-allowed;}
+.gallery-card{background:var(--card);border:1px solid var(--line2);max-width:640px;width:100%;cursor:pointer;overflow:hidden;}
+.gallery-photo{width:100%;height:60vh;max-height:640px;object-fit:contain;background:var(--paper);display:block;}
+.gallery-info{padding:20px 24px;text-align:center;}
+.gallery-name{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:26px;}
+.gallery-sub{font-size:13px;color:var(--ink-muted);margin-top:4px;}
+
+@media (max-width:640px){
+  .gallery-nav{width:40px;height:40px;font-size:18px;}
+  .gallery-photo{height:42vh;}
+  .gallery-name{font-size:20px;}
+}
+.page-title{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:30px;letter-spacing:.3px;margin-top:2px;}
+.page-sub{font-size:13px;color:var(--ink-muted);margin-top:2px;}
+
+/* ---------- Filter bar (multi-select dropdowns) ---------- */
+.msel{position:relative;}
+.msel-btn{
+  background:var(--card);border:1px solid var(--line2);color:var(--ink);
+  padding:9px 12px;font-size:12px;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px;
+  cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.msel-btn:hover{border-color:var(--brand);}
+.msel-btn.active{border-color:var(--brand);color:var(--brand);}
+.msel-count{background:var(--brand);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;line-height:1.5;}
+.msel-caret{opacity:.55;font-size:10px;}
+.msel-panel{
+  position:absolute;top:calc(100% + 4px);left:0;background:var(--card);border:1px solid var(--line2);
+  box-shadow:0 10px 28px rgba(0,0,0,0.14);min-width:190px;max-height:260px;overflow-y:auto;
+  z-index:200;padding:6px 0;display:none;
+}
+.msel-panel.open{display:block;}
+.msel-option{display:flex;align-items:center;gap:9px;padding:7px 12px;font-size:13px;cursor:pointer;}
+.msel-option:hover{background:var(--paper);}
+.msel-option input{cursor:pointer;accent-color:var(--brand);}
+.msel-empty{padding:10px 12px;font-size:12px;color:var(--ink-muted);}
+.msel-clear{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--brand);padding:8px 12px;border-top:1px solid var(--line);cursor:pointer;margin-top:4px;
+}
+
+/* ---------- Table ---------- */
+.table-card{background:var(--card);border:1px solid var(--line2);}
+table{width:100%;border-collapse:collapse;}
+thead th{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--ink-muted);text-align:left;padding:12px 16px;border-bottom:1px solid var(--line2);
+  background:var(--paper);
+}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:rgba(34,38,43,0.02);}
+.sku{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-muted);}
+.qty{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  padding:4px 10px;border-radius:2px;
+}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;}
+.status-pill.in{background:var(--in-stock-dim);color:var(--in-stock);}
+.status-pill.in .dot{background:var(--in-stock);}
+.status-pill.low{background:var(--low-stock-dim);color:var(--low-stock);}
+.status-pill.low .dot{background:var(--low-stock);}
+.status-pill.out{background:var(--out-stock-dim);color:var(--out-stock);}
+.status-pill.out .dot{background:var(--out-stock);}
+.status-pill.incoming{background:var(--incoming-dim);color:var(--incoming);}
+.status-pill.incoming .dot{background:var(--incoming);}
+
+/* ---------- Stack meter (signature element) ----------
+   Reads stock level as a row of solid blocks, like stacked
+   slabs — filled blocks = stock on hand, out of 5 max. */
+.stack-meter{display:inline-flex;gap:2px;vertical-align:middle;}
+.stack-meter .block{width:9px;height:14px;background:var(--line2);}
+.stack-meter .block.filled.in{background:var(--in-stock);}
+.stack-meter .block.filled.low{background:var(--low-stock);}
+.stack-meter .block.filled.out{background:var(--out-stock);}
+
+/* ---------- Buttons ---------- */
+.btn{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+  padding:10px 20px;border:none;cursor:pointer;transition:all .15s;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-primary{background:var(--brand);color:#fff;font-weight:600;}
+.btn-primary:hover{background:var(--brand-light);}
+.btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--ink-muted);}
+.btn-ghost:hover{border-color:var(--brand);color:var(--brand);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ---------- Login screen ---------- */
+.login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:var(--chrome);padding:24px;
+}
+.login-card{
+  width:100%;max-width:380px;background:#22262b;border:1px solid var(--chrome-border);
+  padding:40px 36px 32px;text-align:center;
+}
+.login-logo{width:88px;height:88px;object-fit:cover;border-radius:50%;margin:0 auto 18px;display:block;}
+.login-title{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:26px;color:#fff;letter-spacing:.5px;}
+.login-sub{font-size:11px;color:var(--chrome-muted);margin-top:2px;margin-bottom:26px;font-family:'IBM Plex Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;}
+.login-field{margin-bottom:14px;text-align:left;}
+.login-field label{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--chrome-muted);display:block;margin-bottom:5px;
+}
+.login-field input{
+  width:100%;background:#1b1e22;border:1px solid var(--chrome-border);color:#fff;
+  padding:10px 12px;font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border .15s;
+}
+.login-field input:focus{border-color:var(--brand-light);}
+.login-btn{width:100%;justify-content:center;margin-top:8px;padding:12px;font-size:12px;}
+.login-error{font-size:12px;color:var(--out-stock);margin-top:14px;font-family:'IBM Plex Mono',monospace;display:none;}
+.login-footer{margin-top:24px;padding-top:18px;border-top:1px solid var(--chrome-border);font-size:11px;color:var(--chrome-muted);}
+
+/* ---------- Setup notice ---------- */
+.setup-banner{
+  background:var(--brand-dim);border:1px solid var(--brand);color:var(--brand);
+  padding:14px 18px;font-size:12px;line-height:1.6;margin-bottom:20px;text-align:left;
+}
+.setup-banner code{background:rgba(0,0,0,0.06);padding:1px 6px;font-family:'IBM Plex Mono',monospace;font-size:11px;}
+.sample-note{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-muted);margin-bottom:12px;}
+
+/* ---------- Search / filter toolbar ---------- */
+.toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.search-input{
+  flex:1;min-width:200px;background:var(--card);border:1px solid var(--line2);color:var(--ink);
+  padding:9px 12px;font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border .15s;
+}
+.search-input:focus{border-color:var(--brand);}
+.search-input::placeholder{color:var(--ink-muted);}
+.filter-select{
+  background:var(--card);border:1px solid var(--line2);color:var(--ink);
+  padding:9px 12px;font-size:12px;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px;outline:none;cursor:pointer;
+}
+.filter-select:focus{border-color:var(--brand);}
+.no-results{padding:32px 16px;text-align:center;color:var(--ink-muted);font-size:13px;}
+
+/* ---------- Simple checkbox filter ---------- */
+.checkbox-filter{
+  display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line2);
+  padding:9px 12px;font-size:12px;font-family:'IBM Plex Mono',monospace;letter-spacing:.5px;cursor:pointer;
+}
+.checkbox-filter:hover{border-color:var(--brand);}
+.checkbox-filter input{cursor:pointer;accent-color:var(--brand);}
+.checkbox-filter.active{border-color:var(--brand);color:var(--brand);}
+
+.paired-link{
+  color:var(--brand);text-decoration:underline;cursor:pointer;background:none;border:none;
+  font-size:14px;font-family:'Inter',sans-serif;padding:0;
+}
+.paired-link:hover{color:var(--brand-light);}
+
+/* ---------- Thumbnail (hover to zoom) ---------- */
+.thumb-cell{width:56px;}
+.thumb{
+  width:44px;height:44px;object-fit:cover;border-radius:4px;border:1px solid var(--line2);
+  background:var(--paper);cursor:zoom-in;
+  transition:transform .18s ease, box-shadow .18s ease;
+  transform-origin:center left;
+  position:relative;
+}
+.thumb:hover{
+  transform:scale(3.2);
+  box-shadow:0 10px 28px rgba(0,0,0,0.35);
+  z-index:50;
+  border-color:var(--brand);
+}
+.row-clickable{cursor:pointer;}
+.status-editor{
+  background:var(--card);border:1px solid var(--line2);color:var(--ink);
+  padding:5px 8px;font-size:11px;font-family:'IBM Plex Mono',monospace;cursor:pointer;outline:none;
+}
+.status-editor:focus{border-color:var(--brand);}
+
+/* ---------- Item detail modal ---------- */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(20,17,13,0.62);display:none;
+  align-items:center;justify-content:center;z-index:1000;padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal-card{
+  background:var(--card);max-width:720px;width:100%;max-height:88vh;overflow-y:auto;
+  border:1px solid var(--line2);
+}
+.modal-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:18px 24px;border-bottom:1px solid var(--line2);position:sticky;top:0;background:var(--card);z-index:2;
+}
+.modal-header-title{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:20px;}
+.modal-header-sku{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-muted);}
+.modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:var(--ink-muted);line-height:1;}
+.modal-close:hover{color:var(--ink);}
+.modal-body{padding:24px;}
+
+.gallery-main{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid var(--line2);background:var(--paper);}
+.gallery-thumbs{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.gallery-thumb{width:56px;height:56px;object-fit:cover;border:2px solid transparent;cursor:pointer;border-radius:3px;}
+.gallery-thumb.active{border-color:var(--brand);}
+
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin-top:22px;}
+.detail-field label{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--ink-muted);display:block;margin-bottom:3px;
+}
+.detail-field div{font-size:14px;}
+
+.modal-status-section{margin-top:22px;padding-top:20px;border-top:1px solid var(--line);}
+.modal-field{margin-bottom:14px;}
+.modal-field label{
+  font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--ink-muted);display:block;margin-bottom:6px;
+}
+.modal-field input, .modal-field select{
+  width:100%;background:var(--paper);border:1px solid var(--line2);color:var(--ink);
+  padding:9px 12px;font-size:13px;font-family:'Inter',sans-serif;outline:none;
+}
+.modal-actions{display:flex;gap:10px;margin-top:20px;align-items:center;}
+.modal-note{font-size:12px;color:var(--ink-muted);margin-top:16px;}
+
+@media (max-width: 640px){
+  .nav-tabs{overflow-x:auto;}
+  .brand-text{display:none;}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ════════════════════════════════════════════════════════════
+   SUPABASE CONFIG
+   Fill these in with YOUR new project's values from:
+   Supabase Dashboard → Project Settings → API
+   Do NOT reuse another project's URL or key here.
+   ════════════════════════════════════════════════════════════ */
+const SUPA_URL = 'https://cwhbchoffrtmjciiywps.supabase.co';
+const SUPA_KEY = 'sb_publishable_q7FXk6h1FgHR8kNTUHZFdA_B7BxaUq5';   // publishable key — safe for client-side code
+
+const LOGO_SRC = 'assets/logo.png';
+const BRAND_NAME = 'The Product';
+const CLIENT_LOGO_SRC = 'assets/sunburst-logo.png';
+const CLIENT_NAME = 'Sunburst Memorials';
+const STORE_OPTIONS = ['Michelich', 'Watertown', 'Worthington', 'Norfolk'];
+
+/* ════════════════════════════════════════════════════════════
+   Minimal app shell — login + inventory dashboard.
+   Table below is SAMPLE DATA only, to preview the layout.
+   Swap for a real query once Supabase is connected.
+   ════════════════════════════════════════════════════════════ */
+
+const root = document.getElementById('root');
+const isConfigured = SUPA_URL && SUPA_KEY;
+const sb = isConfigured ? supabase.createClient(SUPA_URL, SUPA_KEY) : null;
+
+const PLACEHOLDER_THUMB = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44">
+    <rect width="44" height="44" fill="#e4e1d9"/>
+    <path d="M10 30 L18 16 L26 24 L30 18 L34 30 Z" fill="#a89985"/>
+    <circle cx="16" cy="14" r="3" fill="#a89985"/>
+  </svg>`);
+
+// level: 0-5, no longer used for status but kept for the stack meter helper
+const SAMPLE_INVENTORY = [
+  { sku:'GRN-SLB-3CM', name:'Granite Slab — 3cm, Polished', location:'Yard A / Bay 3', bin_number:'A-03', qty:142, level:5, status:'available', is_archived:false, image_url:'', photo_urls:[], color:'Gray', style:'Modern', finish:'Polished', retail_price:1899.00, held_by:null, order_type:null, order_number:null, has_core_hole:false, core_hole_qty:null, paired_sku:null },
+  { sku:'MRB-TIL-12', name:'Marble Tile — 12x12', location:'Warehouse / Rack 7', bin_number:'R-07', qty:38, level:2, status:'reserved', is_archived:false, image_url:'', photo_urls:[], color:'White', style:'Classic', finish:'Honed', retail_price:2450.00, held_by:'Jamie R.', reserved_at:new Date().toISOString(), order_type:null, order_number:null, has_core_hole:false, core_hole_qty:null, paired_sku:null },
+  { sku:'BLU-GRV-3/4', name:'Blue Gravel — 3/4"', location:'Yard B / Pile 1', bin_number:'B-01', qty:0, level:0, status:'sold', is_archived:false, image_url:'', photo_urls:[], color:'Blue', style:'Rustic', finish:'Natural', retail_price:325.00, held_by:null, order_type:'sales_order', order_number:'SO-10231', has_core_hole:false, core_hole_qty:null, paired_sku:null },
+  { sku:'TAB-GRY-24', name:'Tablet — Gray 24"', location:'Yard A / Bay 1', bin_number:'A-05', qty:1, level:4, status:'available', is_archived:false, image_url:'', photo_urls:[], color:'Gray', style:'Traditional', finish:'Polished', retail_price:3200.00, held_by:null, order_type:null, order_number:null, has_core_hole:true, core_hole_qty:1, paired_sku:'BSE-GRY-24' },
+  { sku:'BSE-GRY-24', name:'Base — Gray 24"', location:'Yard A / Bay 1', bin_number:'A-06', qty:1, level:4, status:'available', is_archived:false, image_url:'', photo_urls:[], color:'Gray', style:'Traditional', finish:'Natural', retail_price:950.00, held_by:null, order_type:null, order_number:null, has_core_hole:false, core_hole_qty:null, paired_sku:'TAB-GRY-24' },
+  { sku:'TRV-TIL-16', name:'Travertine Tile — 16x16', location:'Warehouse / Rack 2', bin_number:'R-02', qty:0, level:0, status:'sold', is_archived:false, image_url:'', photo_urls:[], color:'Tan', style:'Classic', finish:'Honed', retail_price:6200.00, held_by:null, order_type:'transfer_order', order_number:'TO-4471', has_core_hole:false, core_hole_qty:null, paired_sku:null },
+];
+
+const PRICE_BANDS = [
+  { key:'0-1999',   label:'$0 – $1,999',    test: p => p >= 0    && p < 2000 },
+  { key:'2000-3999',label:'$2,000 – $3,999',test: p => p >= 2000 && p < 4000 },
+  { key:'4000-5999',label:'$4,000 – $5,999',test: p => p >= 4000 && p < 6000 },
+  { key:'6000+',    label:'$6,000+',        test: p => p >= 6000 },
+];
+
+// Active multi-select filter state, one Set per filter dimension
+const FILTER_STATE = { color:new Set(), location:new Set(), style:new Set(), finish:new Set(), price:new Set() };
+
+function levelFromQty(qty){
+  if (qty <= 0) return 0;
+  return Math.min(5, Math.max(1, Math.ceil(qty / 30)));
+}
+
+function stackMeter(level, status){
+  let blocks = '';
+  for (let i = 0; i < 5; i++){
+    blocks += `<span class="block ${i < level ? 'filled ' + status : ''}"></span>`;
+  }
+  return `<span class="stack-meter">${blocks}</span>`;
+}
+
+function statusPill(status){
+  const labels = { available:'Available', reserved:'Reserved', sold:'Sold' };
+  const classes = { available:'in', reserved:'low', sold:'out' };
+  return `<span class="status-pill ${classes[status] || 'in'}"><span class="dot"></span>${labels[status] || status}</span>`;
+}
+
+let currentUserRole = 'sales'; // default to least-privileged until we confirm otherwise
+
+async function loadCurrentUserRole(){
+  if (!sb) return 'sales';
+  const { data: sessionData } = await sb.auth.getSession();
+  if (!sessionData.session) return 'sales';
+  const { data, error } = await sb.from('profiles').select('role').eq('id', sessionData.session.user.id).single();
+  if (error || !data) return 'sales';
+  return data.role;
+}
+
+function renderSetupBanner(){
+  if (isConfigured) return '';
+  return `
+    <div class="setup-banner">
+      <strong>Setup needed:</strong> Supabase isn't connected yet. Open this file and fill in
+      <code>SUPA_URL</code> and <code>SUPA_KEY</code> near the top of the &lt;script&gt; tag with
+      your new Supabase project's values (Project Settings → API).
+    </div>`;
+}
+
+function showLoginScreen(){
+  root.innerHTML = `
+    <div class="login-screen">
+      <div class="login-card">
+        <img src="${LOGO_SRC}" class="login-logo" alt="${BRAND_NAME}"/>
+        <div class="login-title">${BRAND_NAME}</div>
+        <div class="login-sub">Inventory Availability</div>
+
+        <form id="login-form">
+          <div class="login-field">
+            <label>Email</label>
+            <input type="email" id="login-email" autocomplete="email" required/>
+          </div>
+          <div class="login-field">
+            <label>Password</label>
+            <input type="password" id="login-password" autocomplete="current-password" required/>
+          </div>
+          <button type="submit" class="btn btn-primary login-btn" ${isConfigured ? '' : 'disabled'}>
+            Sign In
+          </button>
+        </form>
+        <div class="login-error" id="login-error"></div>
+        <div class="login-footer" style="display:flex;align-items:center;justify-content:center;gap:8px;">
+          <span>for</span><img src="${CLIENT_LOGO_SRC}" alt="${CLIENT_NAME}" class="client-logo-login"/>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('login-form').addEventListener('submit', async function(e){
+    e.preventDefault();
+    const err = document.getElementById('login-error');
+    err.style.display = 'none';
+
+    if (!isConfigured){
+      err.textContent = 'Add your Supabase project details first (see setup notice).';
+      err.style.display = 'block';
+      return;
+    }
+
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Signing In…';
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Sign In';
+
+    if (error){
+      err.textContent = error.message;
+      err.style.display = 'block';
+      return;
+    }
+    showAppShell();
+  });
+}
+
+let currentInventory = [];
+
+function uniqueValues(field){
+  return [...new Set(currentInventory.map(i => i[field]).filter(Boolean))].sort();
+}
+
+function renderMultiSelect(key, label, options){
+  const selected = FILTER_STATE[key];
+  const count = selected.size;
+  const optsHtml = options.length
+    ? options.map(opt => `
+        <label class="msel-option">
+          <input type="checkbox" data-filter="${key}" value="${opt.value}" ${selected.has(opt.value) ? 'checked' : ''}/>
+          ${opt.label}
+        </label>`).join('')
+    : `<div class="msel-empty">No values yet</div>`;
+
+  return `
+    <div class="msel" data-msel="${key}">
+      <button type="button" class="msel-btn ${count ? 'active' : ''}" data-toggle="${key}">
+        ${label}${count ? `<span class="msel-count">${count}</span>` : ''}
+        <span class="msel-caret">▾</span>
+      </button>
+      <div class="msel-panel" id="msel-panel-${key}">
+        ${optsHtml}
+        ${count ? `<div class="msel-clear" data-clear="${key}">Clear</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function updateFilterButton(key){
+  const container = document.querySelector(`[data-msel="${key}"]`);
+  if (!container) return;
+  const btn = container.querySelector('.msel-btn');
+  const count = FILTER_STATE[key].size;
+  const label = btn.dataset.label || btn.textContent.trim().replace(/\d+$/, '').trim();
+  btn.dataset.label = label;
+  btn.classList.toggle('active', count > 0);
+  btn.innerHTML = `${label}${count ? `<span class="msel-count">${count}</span>` : ''}<span class="msel-caret">▾</span>`;
+
+  const panel = container.querySelector('.msel-panel');
+  const existingClear = panel.querySelector('.msel-clear');
+  if (count && !existingClear){
+    panel.insertAdjacentHTML('beforeend', `<div class="msel-clear" data-clear="${key}">Clear</div>`);
+  } else if (!count && existingClear){
+    existingClear.remove();
+  }
+}
+
+function formatDate(iso){
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString(undefined, { month:'numeric', day:'numeric', year:'numeric' });
+}
+
+function statusSubtext(item){
+  const rq = item.reserved_qty || 0;
+  if (item.status === 'available' && rq > 0){
+    const dateStr = item.reserved_at ? ` — ${formatDate(item.reserved_at)}` : '';
+    return `<div style="font-size:10px;color:var(--ink-muted);margin-top:3px;">${rq} of ${item.qty} reserved${item.held_by ? ' by ' + item.held_by : ''}${dateStr}</div>`;
+  }
+  if (item.status === 'reserved' && item.held_by){
+    const dateStr = item.reserved_at ? ` — ${formatDate(item.reserved_at)}` : '';
+    return `<div style="font-size:10px;color:var(--ink-muted);margin-top:3px;">Reserved: ${item.held_by}${dateStr}</div>`;
+  }
+  if (item.status === 'sold' && item.order_number) {
+    const typeLabel = item.order_type === 'transfer_order' ? 'Transfer #' : 'Sales Order #';
+    return `<div style="font-size:10px;color:var(--ink-muted);margin-top:3px;">${typeLabel}${item.order_number}</div>`;
+  }
+  return '';
+}
+
+function renderRows(items, viewingArchive){
+  if (items.length === 0){
+    return `<tr><td colspan="9" class="no-results">${viewingArchive ? 'No archived items.' : 'No items match your search.'}</td></tr>`;
+  }
+  return items.map(item => `
+    <tr class="row-clickable" data-sku="${item.sku}">
+      <td class="thumb-cell"><img class="thumb" src="${item.image_url || PLACEHOLDER_THUMB}" alt="${item.name}"/></td>
+      <td class="sku">${item.sku}</td>
+      <td>${item.name}${item.is_special ? ' <span style="color:var(--brand);font-size:11px;" title="Special">★</span>' : ''}</td>
+      <td>${item.style || '—'}</td>
+      <td class="qty">${item.qty}${(item.reserved_qty||0) > 0 && item.status !== 'sold' ? ` <span style="color:var(--ink-muted);font-weight:400;">(${item.reserved_qty} held)</span>` : ''}</td>
+      <td style="color:var(--ink-muted);">${item.location || '—'}</td>
+      <td class="sku">${item.bin_number || '—'}</td>
+      <td class="qty">${typeof item.retail_price === 'number' ? '$' + item.retail_price.toFixed(2) : '—'}</td>
+      <td>${statusPill(item.status)}${statusSubtext(item)}</td>
+    </tr>`).join('');
+}
+
+/* ---------- Item detail modal ---------- */
+let modalGalleryIndex = 0;
+
+function ensureModalRoot(){
+  let overlay = document.getElementById('modal-overlay');
+  if (!overlay){
+    overlay = document.createElement('div');
+    overlay.id = 'modal-overlay';
+    overlay.className = 'modal-overlay';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e){
+      if (e.target === overlay) closeItemModal();
+    });
+  }
+  return overlay;
+}
+
+async function findItemForModal(sku){
+  const local = currentInventory.find(i => i.sku === sku);
+  if (local) return local;
+  if (!sb) return null;
+  const { data, error } = await sb.from('inventory').select('*').eq('sku', sku).single();
+  if (error || !data) return null;
+  return data;
+}
+
+function pairedWithHtml(item){
+  if (!item.paired_sku) return '—';
+  return `<button class="paired-link" data-open-sku="${item.paired_sku}">${item.paired_sku} →</button>`;
+}
+
+async function openItemModal(sku){
+  const item = await findItemForModal(sku);
+  if (!item){
+    alert('Item not found.');
+    return;
+  }
+  modalGalleryIndex = 0;
+
+  let reservationsList = [];
+  if (sb){
+    const { data } = await sb.from('reservations').select('*').eq('sku', sku).order('reserved_at', { ascending: true });
+    reservationsList = data || [];
+  }
+  const reservedQty = reservationsList.reduce((sum, r) => sum + r.qty, 0);
+  const availQty = item.qty - reservedQty;
+
+  const overlay = ensureModalRoot();
+  const photos = [item.image_url, ...(item.photo_urls || [])].filter(Boolean);
+  const displayPhotos = photos.length ? photos : [PLACEHOLDER_THUMB];
+
+  const thumbsHtml = displayPhotos.map((url, i) =>
+    `<img src="${url}" class="gallery-thumb ${i === 0 ? 'active' : ''}" data-index="${i}"/>`
+  ).join('');
+
+  overlay.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="modal-header-title">${item.name}</div>
+          <div class="modal-header-sku">${item.sku}</div>
+        </div>
+        <button class="modal-close" id="modal-close-btn">×</button>
+      </div>
+      <div class="modal-body">
+        <img id="modal-gallery-main" class="gallery-main" src="${displayPhotos[0]}"/>
+        ${displayPhotos.length > 1 ? `<div class="gallery-thumbs" id="modal-gallery-thumbs">${thumbsHtml}</div>` : ''}
+
+        <div class="detail-grid">
+          <div class="detail-field"><label>Style</label><div>${item.style || '—'}</div></div>
+          <div class="detail-field"><label>Color</label><div>${item.color || '—'}</div></div>
+          <div class="detail-field"><label>Finish</label><div>${item.finish || '—'}</div></div>
+          <div class="detail-field"><label>Retail Price</label><div>${typeof item.retail_price === 'number' ? '$' + item.retail_price.toFixed(2) : '—'}</div></div>
+          <div class="detail-field"><label>Quantity</label><div>${item.qty}${reservedQty > 0 ? ` <span style="color:var(--ink-muted);font-size:12px;">(${reservedQty} reserved, ${availQty} available)</span>` : ''}</div></div>
+          <div class="detail-field"><label>Location</label><div>${item.location || '—'}</div></div>
+          <div class="detail-field"><label>Bin #</label><div>${item.bin_number || '—'}</div></div>
+          <div class="detail-field"><label>Status</label><div>${statusPill(item.status)}</div></div>
+          <div class="detail-field"><label>Core Hole</label><div>${item.has_core_hole ? `Yes${item.core_hole_qty ? ' (Qty: ' + item.core_hole_qty + ')' : ''}` : 'No'}</div></div>
+          <div class="detail-field"><label>Paired With</label><div id="modal-paired-with">${pairedWithHtml(item)}</div></div>
+          <div class="detail-field"><label>Special</label><div>${item.is_special ? '★ Yes' : 'No'}</div></div>
+        </div>
+
+        <div class="modal-status-section">
+          ${reservationsList.length > 0 ? `
+            <div class="modal-note" style="margin-bottom:4px;"><strong>Current holds</strong></div>
+            <div id="modal-reservations-list">
+              ${reservationsList.map(r => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;">
+                  <div>${r.qty} × ${r.held_by || '—'} <span style="color:var(--ink-muted);font-size:11px;">— ${formatDate(r.reserved_at)}</span></div>
+                  <button class="btn btn-ghost" style="padding:5px 10px;font-size:10px;" data-release-id="${r.id}">Release</button>
+                </div>`).join('')}
+            </div>
+          ` : ''}
+          ${item.status === 'sold' && item.order_number ? `<div class="modal-note">Sold by <strong>${item.held_by || '—'}</strong> — ${item.order_type === 'transfer_order' ? 'Transfer' : 'Sales'} Order #: <strong>${item.order_number}</strong></div>` : ''}
+
+          ${availQty > 0 ? `
+            <button class="btn btn-primary" id="modal-reserve-btn">${item.qty > 1 ? 'Reserve Units' : 'Reserve This Item'}</button>
+          ` : ''}
+          ${reservationsList.length > 1 ? `
+            <button class="btn btn-ghost" id="modal-unreserve-btn">Release All Holds</button>
+          ` : reservedQty > 0 ? `
+            <button class="btn btn-ghost" id="modal-unreserve-btn">Make Available Again</button>
+          ` : ''}
+          ${item.status !== 'sold' ? `
+            <button class="btn btn-ghost" id="modal-sold-btn" style="margin-left:8px;">Mark as Sold</button>
+          ` : ''}
+
+          <div class="hidden" id="modal-reserve-form" style="margin-top:14px;">
+            ${item.qty > 1 ? `
+            <div class="modal-field">
+              <label>Quantity to Reserve (of ${availQty} available)</label>
+              <input type="number" id="modal-reserve-qty" min="1" max="${availQty}" value="1"/>
+            </div>` : ''}
+            <div class="modal-field">
+              <label>Store</label>
+              <select id="modal-reserve-store">
+                <option value="">Select a store…</option>
+                ${STORE_OPTIONS.map(s => `<option value="${s}">${s}</option>`).join('')}
+              </select>
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-primary" id="modal-reserve-confirm-btn">Confirm Reservation</button>
+              <button class="btn btn-ghost" id="modal-reserve-cancel-btn">Cancel</button>
+            </div>
+            <div id="modal-reserve-msg" class="modal-note"></div>
+          </div>
+
+          <div class="hidden" id="modal-sold-form" style="margin-top:14px;">
+            <div class="modal-field">
+              <label>Store</label>
+              <select id="modal-sold-store">
+                <option value="">Select a store…</option>
+                ${STORE_OPTIONS.map(s => `<option value="${s}">${s}</option>`).join('')}
+              </select>
+            </div>
+            <div class="modal-field">
+              <label>Order Type</label>
+              <select id="modal-sold-order-type">
+                <option value="sales_order">Sales Order</option>
+                <option value="transfer_order">Transfer Order</option>
+              </select>
+            </div>
+            <div class="modal-field">
+              <label>Order Number</label>
+              <input type="text" id="modal-sold-order-number" placeholder="e.g. SO-10493"/>
+            </div>
+            <div class="modal-actions">
+              <button class="btn btn-primary" id="modal-sold-confirm-btn">Confirm Sale</button>
+              <button class="btn btn-ghost" id="modal-sold-cancel-btn">Cancel</button>
+            </div>
+            <div id="modal-sold-msg" class="modal-note"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  overlay.classList.add('open');
+  document.getElementById('modal-close-btn').addEventListener('click', closeItemModal);
+
+  const resList = document.getElementById('modal-reservations-list');
+  if (resList){
+    resList.addEventListener('click', async function(e){
+      const btn = e.target.closest('[data-release-id]');
+      if (!btn) return;
+      if (!confirm('Release this hold?')) return;
+      const { error } = await sb.rpc('release_reservation', { p_reservation_id: parseInt(btn.dataset.releaseId, 10) });
+      if (error){ alert(error.message || 'Could not release this hold.'); return; }
+      closeItemModal();
+      showAppShell();
+    });
+  }
+
+  if (displayPhotos.length > 1){
+    document.getElementById('modal-gallery-thumbs').addEventListener('click', function(e){
+      const thumb = e.target.closest('.gallery-thumb');
+      if (!thumb) return;
+      const i = parseInt(thumb.dataset.index, 10);
+      document.getElementById('modal-gallery-main').src = displayPhotos[i];
+      overlay.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+      thumb.classList.add('active');
+    });
+  }
+
+  const pairedEl = document.getElementById('modal-paired-with');
+  if (pairedEl){
+    pairedEl.addEventListener('click', function(e){
+      const link = e.target.closest('[data-open-sku]');
+      if (!link) return;
+      openItemModal(link.dataset.openSku);
+    });
+  }
+
+  const reserveBtn = document.getElementById('modal-reserve-btn');
+  if (reserveBtn){
+    reserveBtn.addEventListener('click', function(){
+      document.getElementById('modal-reserve-form').classList.remove('hidden');
+      reserveBtn.classList.add('hidden');
+    });
+    document.getElementById('modal-reserve-cancel-btn').addEventListener('click', function(){
+      document.getElementById('modal-reserve-form').classList.add('hidden');
+      reserveBtn.classList.remove('hidden');
+    });
+    document.getElementById('modal-reserve-confirm-btn').addEventListener('click', () => confirmReserve(item.sku));
+  }
+
+  const unreserveBtn = document.getElementById('modal-unreserve-btn');
+  if (unreserveBtn) unreserveBtn.addEventListener('click', () => confirmMakeAvailable(item.sku));
+
+  const soldBtn = document.getElementById('modal-sold-btn');
+  if (soldBtn){
+    soldBtn.addEventListener('click', function(){
+      document.getElementById('modal-sold-form').classList.remove('hidden');
+      soldBtn.classList.add('hidden');
+    });
+    document.getElementById('modal-sold-cancel-btn').addEventListener('click', function(){
+      document.getElementById('modal-sold-form').classList.add('hidden');
+      soldBtn.classList.remove('hidden');
+    });
+    document.getElementById('modal-sold-confirm-btn').addEventListener('click', () => confirmMarkSold(item.sku));
+  }
+}
+
+async function confirmReserve(sku){
+  const store = document.getElementById('modal-reserve-store').value;
+  const qtyField = document.getElementById('modal-reserve-qty');
+  const reserveQty = qtyField ? (parseInt(qtyField.value, 10) || 0) : 1;
+  const msg = document.getElementById('modal-reserve-msg');
+  if (!store){
+    msg.textContent = 'Please select a store.';
+    msg.style.color = 'var(--out-stock)';
+    return;
+  }
+  if (reserveQty < 1){
+    msg.textContent = 'Enter a quantity of at least 1.';
+    msg.style.color = 'var(--out-stock)';
+    return;
+  }
+
+  const { error } = await sb.rpc('reserve_item', { p_sku: sku, p_held_by: store, p_qty: reserveQty });
+  if (error){
+    msg.textContent = error.message || 'Could not reserve this item.';
+    msg.style.color = 'var(--out-stock)';
+    return;
+  }
+
+  closeItemModal();
+  showAppShell();
+}
+
+async function confirmMakeAvailable(sku){
+  if (!confirm('Make this item available again?')) return;
+  const { error } = await sb.rpc('make_available', { p_sku: sku });
+  if (error){
+    alert(error.message || 'Could not update this item.');
+    return;
+  }
+  closeItemModal();
+  showAppShell();
+}
+
+async function confirmMarkSold(sku){
+  const store = document.getElementById('modal-sold-store').value;
+  const orderType = document.getElementById('modal-sold-order-type').value;
+  const orderNumber = document.getElementById('modal-sold-order-number').value.trim();
+  const msg = document.getElementById('modal-sold-msg');
+
+  if (!store){
+    msg.textContent = 'Please select a store.';
+    msg.style.color = 'var(--out-stock)';
+    return;
+  }
+
+  const { error } = await sb.rpc('mark_sold', {
+    p_sku: sku, p_store: store, p_order_type: orderType, p_order_number: orderNumber || null
+  });
+  if (error){
+    msg.textContent = error.message || 'Could not mark this item sold.';
+    msg.style.color = 'var(--out-stock)';
+    return;
+  }
+
+  closeItemModal();
+  showAppShell();
+}
+
+function closeItemModal(){
+  const overlay = document.getElementById('modal-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
+let currentView = 'table';
+let galleryIndex = 0;
+
+function getFilteredItems(){
+  const q = document.getElementById('inv-search').value.trim().toLowerCase();
+  const statusFilter = document.getElementById('inv-status-filter').value;
+  const coreHoleOnly = document.getElementById('inv-core-hole-filter').checked;
+  const specialsOnly = document.getElementById('inv-specials-filter').checked;
+
+  return currentInventory.filter(item => {
+    const matchesQuery = !q ||
+      item.sku.toLowerCase().includes(q) ||
+      item.name.toLowerCase().includes(q) ||
+      (item.location || '').toLowerCase().includes(q);
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesColor = FILTER_STATE.color.size === 0 || FILTER_STATE.color.has(item.color);
+    const matchesLocation = FILTER_STATE.location.size === 0 || FILTER_STATE.location.has(item.location);
+    const matchesStyle = FILTER_STATE.style.size === 0 || FILTER_STATE.style.has(item.style);
+    const matchesFinish = FILTER_STATE.finish.size === 0 || FILTER_STATE.finish.has(item.finish);
+    const matchesPrice = FILTER_STATE.price.size === 0 || [...FILTER_STATE.price].some(bandKey => {
+      const band = PRICE_BANDS.find(b => b.key === bandKey);
+      return band && typeof item.retail_price === 'number' && band.test(item.retail_price);
+    });
+    const matchesCoreHole = !coreHoleOnly || item.has_core_hole === true;
+    const matchesSpecial = !specialsOnly || item.is_special === true;
+    return matchesQuery && matchesStatus && matchesColor && matchesLocation && matchesStyle && matchesFinish && matchesPrice && matchesCoreHole && matchesSpecial;
+  });
+}
+
+function renderGalleryStage(items){
+  const stage = document.getElementById('gallery-stage-content');
+  const counter = document.getElementById('gallery-counter');
+  const prevBtn = document.getElementById('gallery-prev');
+  const nextBtn = document.getElementById('gallery-next');
+  if (!stage) return;
+
+  if (items.length === 0){
+    stage.innerHTML = `<div class="no-results">No items match your search.</div>`;
+    stage.removeAttribute('data-sku');
+    counter.textContent = '';
+    if (prevBtn) prevBtn.disabled = true;
+    if (nextBtn) nextBtn.disabled = true;
+    return;
+  }
+
+  if (galleryIndex >= items.length) galleryIndex = items.length - 1;
+  if (galleryIndex < 0) galleryIndex = 0;
+
+  const item = items[galleryIndex];
+  counter.textContent = `${galleryIndex + 1} of ${items.length}`;
+  stage.dataset.sku = item.sku;
+  stage.innerHTML = `
+    <img class="gallery-photo" src="${item.image_url || PLACEHOLDER_THUMB}" alt="${item.name}"/>
+    <div class="gallery-info">
+      <div class="gallery-name">${item.name}${item.is_special ? ' <span style="color:var(--brand);">★</span>' : ''}</div>
+      <div class="gallery-sub">${[item.style, item.color].filter(Boolean).join(' · ') || '—'}</div>
+      <div style="margin-top:10px;">${statusPill(item.status)}</div>
+    </div>`;
+
+  if (prevBtn) prevBtn.disabled = galleryIndex === 0;
+  if (nextBtn) nextBtn.disabled = galleryIndex === items.length - 1;
+}
+
+function applyFilters(){
+  const filtered = getFilteredItems();
+  document.getElementById('inv-tbody').innerHTML = renderRows(filtered, false);
+  if (currentView === 'gallery'){
+    renderGalleryStage(filtered);
+  }
+}
+
+function setupFilterBar(){
+  const bar = document.getElementById('filter-bar');
+
+  bar.addEventListener('click', function(e){
+    const toggleKey = e.target.closest('[data-toggle]')?.dataset.toggle;
+    const clearKey = e.target.closest('[data-clear]')?.dataset.clear;
+
+    if (toggleKey){
+      const panel = document.getElementById(`msel-panel-${toggleKey}`);
+      const isOpen = panel.classList.contains('open');
+      document.querySelectorAll('.msel-panel.open').forEach(p => p.classList.remove('open'));
+      if (!isOpen) panel.classList.add('open');
+      e.stopPropagation();
+      return;
+    }
+
+    if (clearKey){
+      FILTER_STATE[clearKey].clear();
+      document.querySelectorAll(`#msel-panel-${clearKey} input[type="checkbox"]`).forEach(cb => cb.checked = false);
+      updateFilterButton(clearKey);
+      applyFilters();
+      e.stopPropagation();
+    }
+  });
+
+  bar.addEventListener('change', function(e){
+    const key = e.target.dataset.filter;
+    if (!key) return;
+    const value = e.target.value;
+    if (e.target.checked) FILTER_STATE[key].add(value);
+    else FILTER_STATE[key].delete(value);
+    updateFilterButton(key);
+    applyFilters();
+  });
+
+  document.addEventListener('click', function(){
+    document.querySelectorAll('.msel-panel.open').forEach(p => p.classList.remove('open'));
+  });
+}
+
+async function showAppShell(){
+  currentUserRole = await loadCurrentUserRole();
+
+  let inventory = SAMPLE_INVENTORY;
+  let usingSample = true;
+
+  if (isConfigured){
+    const { data, error } = await sb.from('inventory').select('*').eq('is_archived', false).order('sku');
+    if (!error && data){
+      inventory = data;
+      usingSample = false;
+    }
+  } else {
+    inventory = SAMPLE_INVENTORY.filter(i => !i.is_archived);
+  }
+
+  currentInventory = inventory;
+  const rows = renderRows(inventory, false);
+  const isAdmin = currentUserRole === 'admin';
+
+  root.innerHTML = `
+    <div class="app">
+      <div class="topnav">
+        <div class="brand">
+          <img src="${LOGO_SRC}" alt="${BRAND_NAME}"/>
+          <span class="brand-text">${BRAND_NAME}</span>
+          <span class="client-divider">for</span>
+          <img src="${CLIENT_LOGO_SRC}" alt="${CLIENT_NAME}" class="client-logo"/>
+        </div>
+        <div class="nav-tabs">
+          <button class="nav-tab active" id="tab-inventory">Inventory</button>
+          <a href="reserved.html" class="nav-tab" style="text-decoration:none;">Reserved Sheet</a>
+          ${isAdmin ? `<a href="add-item.html" class="nav-tab" style="text-decoration:none;">+ Add Item</a>` : ''}
+          ${isAdmin ? `<a href="inventory-list.html" class="nav-tab" style="text-decoration:none;">Master List</a>` : ''}
+        </div>
+        <div class="sync-status">
+          <span class="sync-dot ${isConfigured ? 'live' : 'error'}"></span>
+          ${isConfigured ? 'Connected' : 'Not configured'}
+        </div>
+        <button class="btn btn-ghost" id="sign-out-btn" style="margin-left:16px;">Sign Out</button>
+      </div>
+      <div class="content">
+        <div class="page-header">
+          <div>
+            <div class="eyebrow">Live Availability</div>
+            <div class="page-title">Inventory</div>
+            <div class="page-sub">What's on hand, where it is, and what's available.</div>
+          </div>
+          <div class="view-toggle" id="view-toggle">
+            <button class="view-toggle-btn active" data-view="table">☰ List</button>
+            <button class="view-toggle-btn" data-view="gallery">▦ Gallery</button>
+          </div>
+        </div>
+
+        ${usingSample ? '<div class="sample-note">Sample data — inventory table not reachable, showing placeholder rows</div>' : ''}
+
+        <div class="toolbar" id="filter-bar">
+          <input type="text" id="inv-search" class="search-input" placeholder="Search by SKU, product, or location…"/>
+          ${renderMultiSelect('color', 'Color', uniqueValues('color').map(v => ({ value:v, label:v })))}
+          ${renderMultiSelect('location', 'Location', uniqueValues('location').map(v => ({ value:v, label:v })))}
+          ${renderMultiSelect('style', 'Style', uniqueValues('style').map(v => ({ value:v, label:v })))}
+          ${renderMultiSelect('finish', 'Finish', uniqueValues('finish').map(v => ({ value:v, label:v })))}
+          ${renderMultiSelect('price', 'Retail Price', PRICE_BANDS.map(b => ({ value:b.key, label:b.label })))}
+          <select id="inv-status-filter" class="filter-select">
+            <option value="all">All Statuses</option>
+            <option value="available">Available</option>
+            <option value="reserved">Reserved</option>
+            <option value="sold">Sold</option>
+          </select>
+          <label class="checkbox-filter" id="core-hole-filter-label">
+            <input type="checkbox" id="inv-core-hole-filter"/> Core Hole
+          </label>
+          <label class="checkbox-filter" id="specials-filter-label">
+            <input type="checkbox" id="inv-specials-filter"/> ★ Specials
+          </label>
+        </div>
+
+        <div id="inv-view-table">
+          <div class="table-card">
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>SKU</th>
+                  <th>Description</th>
+                  <th>Style</th>
+                  <th>QTY</th>
+                  <th>Location</th>
+                  <th>Bin #</th>
+                  <th>Retail Price</th>
+                  <th>Available</th>
+                </tr>
+              </thead>
+              <tbody id="inv-tbody">${rows}</tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="gallery-view hidden" id="gallery-view">
+          <div class="gallery-counter" id="gallery-counter"></div>
+          <div class="gallery-stage">
+            <button class="gallery-nav" id="gallery-prev" aria-label="Previous item">‹</button>
+            <div class="gallery-card" id="gallery-stage-content"></div>
+            <button class="gallery-nav" id="gallery-next" aria-label="Next item">›</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('sign-out-btn').addEventListener('click', async function(){
+    if (sb) await sb.auth.signOut();
+    showLoginScreen();
+  });
+  document.getElementById('inv-search').addEventListener('input', applyFilters);
+  document.getElementById('inv-status-filter').addEventListener('change', applyFilters);
+  document.getElementById('inv-core-hole-filter').addEventListener('change', function(){
+    document.getElementById('core-hole-filter-label').classList.toggle('active', this.checked);
+    applyFilters();
+  });
+  document.getElementById('inv-specials-filter').addEventListener('change', function(){
+    document.getElementById('specials-filter-label').classList.toggle('active', this.checked);
+    applyFilters();
+  });
+  setupFilterBar();
+
+  document.getElementById('view-toggle').addEventListener('click', function(e){
+    const btn = e.target.closest('[data-view]');
+    if (!btn) return;
+    currentView = btn.dataset.view;
+    document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.view === currentView));
+    document.getElementById('inv-view-table').classList.toggle('hidden', currentView !== 'table');
+    document.getElementById('gallery-view').classList.toggle('hidden', currentView !== 'gallery');
+    if (currentView === 'gallery'){
+      galleryIndex = 0;
+      renderGalleryStage(getFilteredItems());
+    }
+  });
+
+  document.getElementById('gallery-prev').addEventListener('click', function(){
+    galleryIndex = Math.max(0, galleryIndex - 1);
+    renderGalleryStage(getFilteredItems());
+  });
+  document.getElementById('gallery-next').addEventListener('click', function(){
+    const items = getFilteredItems();
+    galleryIndex = Math.min(items.length - 1, galleryIndex + 1);
+    renderGalleryStage(items);
+  });
+  document.getElementById('gallery-stage-content').addEventListener('click', function(){
+    if (this.dataset.sku) openItemModal(this.dataset.sku);
+  });
+
+  if (currentView === 'gallery'){
+    document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'gallery'));
+    document.getElementById('inv-view-table').classList.add('hidden');
+    document.getElementById('gallery-view').classList.remove('hidden');
+    renderGalleryStage(getFilteredItems());
+  }
+
+  // Click any row to open the read-only item detail (photos + all fields)
+  document.getElementById('inv-tbody').addEventListener('click', function(e){
+    const row = e.target.closest('tr[data-sku]');
+    if (!row) return;
+    openItemModal(row.dataset.sku);
+  });
+}
+
+async function init(){
+  if (isConfigured){
+    const { data } = await sb.auth.getSession();
+    if (data.session){
+      showAppShell();
+      return;
+    }
+  }
+  showLoginScreen();
+}
+
+document.addEventListener('keydown', function(e){
+  if (currentView !== 'gallery') return;
+  if (e.key === 'ArrowRight') document.getElementById('gallery-next')?.click();
+  if (e.key === 'ArrowLeft') document.getElementById('gallery-prev')?.click();
+});
+
+init();
+</script>
+</body>
+</html>
