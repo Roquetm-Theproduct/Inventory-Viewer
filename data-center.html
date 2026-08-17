@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The Product — Data Center (Admin)</title>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --chrome:#1b1e22; --chrome-border:rgba(255,255,255,0.08); --chrome-muted:#8b8f96;
+  --paper:#f5f4f0; --card:#ffffff;
+  --ink:#22262b; --ink-muted:#6b7280;
+  --line:rgba(34,38,43,0.10); --line2:rgba(34,38,43,0.18);
+  --brand:#a6741f; --brand-light:#c98f2a; --brand-dim:rgba(166,116,31,0.10);
+  --in-stock:#2f7a55; --in-stock-dim:rgba(47,122,85,0.12);
+  --low-stock:#c17f2a; --low-stock-dim:rgba(193,127,42,0.12);
+  --out-stock:#a8432f; --out-stock-dim:rgba(168,67,47,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;}
+
+.topnav{display:flex;align-items:center;background:var(--chrome);border-bottom:1px solid var(--chrome-border);padding:0 20px;height:58px;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand img{height:34px;width:34px;object-fit:cover;border-radius:50%;}
+.brand-text{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:19px;color:#fff;}
+.admin-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--brand-light);background:rgba(166,116,31,0.18);padding:3px 8px;margin-left:10px;}
+.nav-links{margin-left:24px;display:flex;gap:4px;}
+.nav-link{color:var(--chrome-muted);font-family:'IBM Plex Mono',monospace;font-size:11px;text-decoration:none;letter-spacing:.5px;padding:8px 12px;}
+.nav-link:hover{color:#fff;}
+.right-actions{margin-left:auto;display:flex;align-items:center;gap:14px;}
+
+.content{max-width:1160px;margin:0 auto;padding:28px 24px 80px;}
+.page-title{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:28px;}
+.page-sub{font-size:13px;color:var(--ink-muted);margin-top:2px;margin-bottom:22px;}
+
+.info-note{background:var(--brand-dim);border:1px solid var(--brand);color:var(--brand);padding:12px 16px;font-size:12px;line-height:1.6;margin-bottom:22px;}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;margin-bottom:28px;}
+.stat-card{background:var(--card);border:1px solid var(--line2);padding:18px 20px;}
+.stat-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-muted);margin-bottom:8px;}
+.stat-value{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:30px;}
+.stat-sub{font-size:11px;color:var(--ink-muted);margin-top:4px;}
+
+.section-title{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:19px;margin:32px 0 12px;}
+.section-sub{font-size:12px;color:var(--ink-muted);margin-top:-8px;margin-bottom:14px;}
+
+.table-card{background:var(--card);border:1px solid var(--line2);overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-muted);text-align:left;padding:12px 16px;border-bottom:1px solid var(--line2);background:var(--paper);white-space:nowrap;}
+tbody td{padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px;white-space:nowrap;}
+tbody tr:last-child td{border-bottom:none;}
+.sku{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-muted);}
+.no-results{padding:32px 16px;text-align:center;color:var(--ink-muted);font-size:13px;}
+.pos{color:var(--in-stock);}
+.neg{color:var(--out-stock);}
+
+.btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:10px 20px;border:none;cursor:pointer;transition:all .15s;}
+.btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--ink-muted);}
+.btn-ghost:hover{border-color:var(--brand);color:var(--brand);}
+.btn-primary{background:var(--brand);color:#fff;font-weight:600;}
+.btn-primary:hover{background:var(--brand-light);}
+
+.filter-select{background:var(--card);border:1px solid var(--line2);color:var(--ink);padding:9px 12px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;margin-bottom:18px;}
+
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--chrome);padding:24px;}
+.login-card{width:100%;max-width:360px;background:#22262b;border:1px solid var(--chrome-border);padding:36px 32px;text-align:center;}
+.login-card img{width:70px;height:70px;object-fit:cover;border-radius:50%;margin:0 auto 16px;}
+.login-card h1{font-family:'Big Shoulders Display',sans-serif;font-size:22px;color:#fff;}
+.login-card p{font-size:12px;color:var(--chrome-muted);margin-top:6px;}
+.login-field{margin:16px 0 10px;text-align:left;}
+.login-field label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--chrome-muted);display:block;margin-bottom:5px;}
+.login-field input{width:100%;background:#1b1e22;border:1px solid var(--chrome-border);color:#fff;padding:10px 12px;font-size:13px;outline:none;}
+
+.denied-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--paper);padding:24px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* Same project as index.html — keep these in sync */
+const SUPA_URL = 'https://cwhbchoffrtmjciiywps.supabase.co';
+const SUPA_KEY = 'sb_publishable_q7FXk6h1FgHR8kNTUHZFdA_B7BxaUq5';
+const LOGO_SRC = 'assets/logo.png';
+
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+const root = document.getElementById('root');
+
+let allItems = [];
+let soldWindowDays = 90;
+
+function showLogin(){
+  root.innerHTML = `
+    <div class="login-screen">
+      <div class="login-card">
+        <img src="${LOGO_SRC}" alt="The Product"/>
+        <h1>Admin Access</h1>
+        <p>Sign in to view analytics</p>
+        <form id="login-form">
+          <div class="login-field"><label>Email</label><input type="email" id="email" required/></div>
+          <div class="login-field"><label>Password</label><input type="password" id="password" required/></div>
+          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:10px;">Sign In</button>
+        </form>
+        <p id="login-err" style="color:#c9756a;margin-top:12px;"></p>
+      </div>
+    </div>`;
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const { error } = await sb.auth.signInWithPassword({
+      email: document.getElementById('email').value,
+      password: document.getElementById('password').value
+    });
+    if (error) document.getElementById('login-err').textContent = error.message;
+    else init();
+  });
+}
+
+function showDenied(){
+  root.innerHTML = `
+    <div class="denied-screen">
+      <div>
+        <div class="page-title">Admins Only</div>
+        <p class="page-sub">This page is for inventory admins. If that should be you, ask another admin to update your role.</p>
+        <a href="index.html" class="nav-link" style="color:var(--brand);">← Back to Inventory</a>
+      </div>
+    </div>`;
+}
+
+function money(n){
+  return typeof n === 'number' ? '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+}
+
+function daysBetween(a, b){
+  return Math.max(0, Math.round((b - a) / (1000 * 60 * 60 * 24)));
+}
+
+function median(nums){
+  if (nums.length === 0) return null;
+  const sorted = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+async function loadItems(){
+  const { data, error } = await sb.from('inventory').select('*').eq('is_archived', false);
+  allItems = (!error && data) ? data : [];
+}
+
+function computeStats(){
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - soldWindowDays * 24 * 60 * 60 * 1000);
+
+  const soldAll = allItems.filter(i => i.status === 'sold' && i.sold_at);
+  const soldInWindow = soldAll.filter(i => new Date(i.sold_at) >= cutoff);
+
+  const daysToSell = soldAll
+    .filter(i => i.created_at)
+    .map(i => daysBetween(new Date(i.created_at), new Date(i.sold_at)));
+
+  const activeItems = allItems.filter(i => i.status !== 'sold' && i.created_at);
+  const daysListed = activeItems.map(i => ({ item: i, days: daysBetween(new Date(i.created_at), now) }));
+
+  const totalSoldValue = soldInWindow.reduce((sum, i) => sum + (typeof i.sold_price === 'number' ? i.sold_price : (i.retail_price || 0)), 0);
+
+  const realizationPairs = soldAll.filter(i => typeof i.sold_price === 'number' && typeof i.retail_price === 'number' && i.retail_price > 0);
+  const avgRealizationPct = realizationPairs.length
+    ? realizationPairs.reduce((sum, i) => sum + (i.sold_price / i.retail_price), 0) / realizationPairs.length * 100
+    : null;
+
+  const byStore = {};
+  soldInWindow.forEach(i => {
+    const store = i.held_by || 'Unknown';
+    if (!byStore[store]) byStore[store] = { count: 0, value: 0 };
+    byStore[store].count += 1;
+    byStore[store].value += (typeof i.sold_price === 'number' ? i.sold_price : (i.retail_price || 0));
+  });
+
+  const slowMovers = daysListed
+    .filter(d => d.item.status === 'available')
+    .sort((a, b) => b.days - a.days)
+    .slice(0, 15);
+
+  return {
+    soldCount: soldInWindow.length,
+    totalSoldValue,
+    avgDaysToSell: daysToSell.length ? Math.round(daysToSell.reduce((a, b) => a + b, 0) / daysToSell.length) : null,
+    medianDaysToSell: median(daysToSell),
+    daysToSellSampleSize: daysToSell.length,
+    avgRealizationPct,
+    realizationSampleSize: realizationPairs.length,
+    byStore,
+    slowMovers,
+    activeCount: activeItems.length
+  };
+}
+
+function renderStoreTable(byStore){
+  const stores = Object.keys(byStore).sort((a, b) => byStore[b].value - byStore[a].value);
+  if (stores.length === 0) return `<tr><td colspan="3" class="no-results">No sales in this window.</td></tr>`;
+  return stores.map(s => `
+    <tr>
+      <td>${s}</td>
+      <td>${byStore[s].count}</td>
+      <td>${money(byStore[s].value)}</td>
+    </tr>`).join('');
+}
+
+function renderSlowMovers(slowMovers){
+  if (slowMovers.length === 0) return `<tr><td colspan="5" class="no-results">Nothing available yet, or created_at isn't populated.</td></tr>`;
+  return slowMovers.map(d => `
+    <tr>
+      <td class="sku">${d.item.sku}</td>
+      <td>${d.item.name}</td>
+      <td>${d.item.location || '—'}</td>
+      <td>${money(d.item.retail_price)}</td>
+      <td>${d.days}</td>
+    </tr>`).join('');
+}
+
+function render(){
+  const stats = computeStats();
+
+  document.getElementById('dc-content').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Items Sold</div>
+        <div class="stat-value">${stats.soldCount}</div>
+        <div class="stat-sub">Last ${soldWindowDays} days</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Sale Value</div>
+        <div class="stat-value">${money(stats.totalSoldValue)}</div>
+        <div class="stat-sub">Last ${soldWindowDays} days</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg. Days to Sell</div>
+        <div class="stat-value">${stats.avgDaysToSell !== null ? stats.avgDaysToSell : '—'}</div>
+        <div class="stat-sub">${stats.daysToSellSampleSize} item${stats.daysToSellSampleSize === 1 ? '' : 's'} with known listing date</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Median Days to Sell</div>
+        <div class="stat-value">${stats.medianDaysToSell !== null ? stats.medianDaysToSell : '—'}</div>
+        <div class="stat-sub">Less skewed by outliers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg. Price Realization</div>
+        <div class="stat-value">${stats.avgRealizationPct !== null ? stats.avgRealizationPct.toFixed(1) + '%' : '—'}</div>
+        <div class="stat-sub">Sale price vs. retail price · ${stats.realizationSampleSize} item${stats.realizationSampleSize === 1 ? '' : 's'}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Currently Active</div>
+        <div class="stat-value">${stats.activeCount}</div>
+        <div class="stat-sub">Not sold, not archived</div>
+      </div>
+    </div>
+
+    <div class="section-title">Sales by Store</div>
+    <div class="section-sub">Last ${soldWindowDays} days</div>
+    <div class="table-card">
+      <table>
+        <thead><tr><th>Store</th><th>Items Sold</th><th>Total Value</th></tr></thead>
+        <tbody>${renderStoreTable(stats.byStore)}</tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Oldest Active Listings</div>
+    <div class="section-sub">Available items sitting longest since being listed — worth a look for pricing or promotion</div>
+    <div class="table-card">
+      <table>
+        <thead><tr><th>SKU</th><th>Description</th><th>Location</th><th>Retail Price</th><th>Days Listed</th></tr></thead>
+        <tbody>${renderSlowMovers(stats.slowMovers)}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function showDataCenter(){
+  await loadItems();
+
+  root.innerHTML = `
+    <div class="topnav">
+      <div class="brand">
+        <img src="${LOGO_SRC}" alt="The Product"/>
+        <span class="brand-text">The Product</span>
+        <span class="admin-tag">Admin</span>
+      </div>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">Inventory</a>
+        <a href="add-item.html" class="nav-link">+ Add Item</a>
+        <a href="inventory-list.html" class="nav-link">Master List</a>
+        <a href="manage-users.html" class="nav-link">Users</a>
+      </div>
+      <div class="right-actions">
+        <button class="btn btn-ghost" id="sign-out-btn">Sign Out</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="page-title">Data Center</div>
+      <div class="page-sub">Sales performance and time-on-market across inventory.</div>
+
+      <div class="info-note">
+        Days-on-market figures only cover items listed after the tracking columns were added — items already in the system before then won't have an accurate original listing date.
+      </div>
+
+      <select id="window-select" class="filter-select">
+        <option value="30">Last 30 days</option>
+        <option value="90" selected>Last 90 days</option>
+        <option value="180">Last 180 days</option>
+        <option value="365">Last 12 months</option>
+      </select>
+
+      <div id="dc-content"></div>
+    </div>`;
+
+  document.getElementById('sign-out-btn').addEventListener('click', async () => { await sb.auth.signOut(); showLogin(); });
+  document.getElementById('window-select').addEventListener('change', function(){
+    soldWindowDays = parseInt(this.value, 10);
+    render();
+  });
+
+  render();
+}
+
+async function init(){
+  const { data: sessionData } = await sb.auth.getSession();
+  if (!sessionData.session){ showLogin(); return; }
+
+  const { data: profile, error } = await sb.from('profiles').select('role').eq('id', sessionData.session.user.id).single();
+  if (error || !profile || profile.role !== 'admin'){ showDenied(); return; }
+
+  showDataCenter();
+}
+
+init();
+</script>
+</body>
+</html>
